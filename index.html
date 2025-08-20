@@ -15,7 +15,21 @@
     <!-- Форма добавления -->
     <form id="addForm" class="grid grid-cols-6 gap-2 mb-4">
       <input type="date" id="date" class="col-span-1 border p-2 rounded" required>
-      <input type="text" id="currency" placeholder="Валюта (BTC)" class="col-span-1 border p-2 rounded" required>
+
+      <!-- Выпадающий список валют -->
+      <select id="currency" class="col-span-1 border p-2 rounded" required>
+        <option value="">Выберите валюту</option>
+        <option value="BTC">BTC</option>
+        <option value="ETH">ETH</option>
+        <option value="BNB">BNB</option>
+        <option value="USDT">USDT</option>
+        <option value="LTC">LTC</option>
+        <option value="Другие">Другие</option>
+      </select>
+
+      <!-- Скрытое поле для "Другие" -->
+      <input type="text" id="currencyOther" placeholder="Введите другую валюту" class="col-span-1 border p-2 rounded" style="display:none;">
+
       <input type="number" id="amount" placeholder="Сумма" step="0.0001" class="col-span-1 border p-2 rounded" required>
       <input type="number" id="rate" placeholder="Курс $" step="0.01" class="col-span-1 border p-2 rounded" required>
       <input type="text" id="note" placeholder="Примечание" class="col-span-1 border p-2 rounded">
@@ -57,6 +71,18 @@
     const addForm = document.getElementById("addForm");
     const totalEur = document.getElementById("totalEur");
     const eurRateBox = document.getElementById("eurRateBox");
+
+    const currencySelect = document.getElementById("currency");
+    const currencyOther = document.getElementById("currencyOther");
+
+    // Показать/скрыть поле "Другие"
+    currencySelect.addEventListener("change", () => {
+      if(currencySelect.value === "Другие") {
+        currencyOther.style.display = "block";
+      } else {
+        currencyOther.style.display = "none";
+      }
+    });
 
     // Загружаем курс USD→EUR
     async function loadEurRate() {
@@ -102,9 +128,10 @@
 
     addForm.addEventListener("submit", e => {
       e.preventDefault();
+      let currencyValue = currencySelect.value === "Другие" ? currencyOther.value : currencySelect.value;
       let newItem = {
         date: document.getElementById("date").value,
-        currency: document.getElementById("currency").value,
+        currency: currencyValue,
         amount: parseFloat(document.getElementById("amount").value),
         rate: parseFloat(document.getElementById("rate").value),
         note: document.getElementById("note").value
@@ -113,6 +140,7 @@
       localStorage.setItem("cryptoData", JSON.stringify(data));
       renderTable();
       addForm.reset();
+      currencyOther.style.display = "none"; // скрываем поле после добавления
     });
 
     function deleteItem(index) {
@@ -124,14 +152,20 @@
     function editItem(index) {
       let item = data[index];
       document.getElementById("date").value = item.date;
-      document.getElementById("currency").value = item.currency;
+      if(["BTC","ETH","BNB","USDT","LTC"].includes(item.currency)) {
+        currencySelect.value = item.currency;
+        currencyOther.style.display = "none";
+      } else {
+        currencySelect.value = "Другие";
+        currencyOther.style.display = "block";
+        currencyOther.value = item.currency;
+      }
       document.getElementById("amount").value = item.amount;
       document.getElementById("rate").value = item.rate;
       document.getElementById("note").value = item.note;
       deleteItem(index);
     }
 
-    // Загружаем курс и строим таблицу
     loadEurRate();
   </script>
 </body>
