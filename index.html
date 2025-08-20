@@ -12,6 +12,16 @@
     <!-- Текущий курс -->
     <div id="eurRateBox" class="mb-4 text-lg font-semibold text-green-600">Загрузка курса USD→EUR...</div>
 
+    <!-- Фильтр -->
+    <div class="mb-4">
+      <label for="filter" class="mr-2 font-semibold">Фильтр:</label>
+      <select id="filter" class="border p-2 rounded">
+        <option value="all">Все</option>
+        <option value="active">Активные</option>
+        <option value="withdraw">Выведенные</option>
+      </select>
+    </div>
+
     <!-- Форма добавления -->
     <form id="addForm" class="grid grid-cols-6 gap-2 mb-4">
       <input type="date" id="date" class="col-span-1 border p-2 rounded" required>
@@ -74,15 +84,15 @@
 
     const currencySelect = document.getElementById("currency");
     const currencyOther = document.getElementById("currencyOther");
+    const filterSelect = document.getElementById("filter");
 
     // Показать/скрыть поле "Другие"
     currencySelect.addEventListener("change", () => {
-      if(currencySelect.value === "Другие") {
-        currencyOther.style.display = "block";
-      } else {
-        currencyOther.style.display = "none";
-      }
+      currencyOther.style.display = currencySelect.value === "Другие" ? "block" : "none";
     });
+
+    // Фильтр таблицы
+    filterSelect.addEventListener("change", renderTable);
 
     // Загружаем курс USD→EUR
     async function loadEurRate() {
@@ -100,8 +110,12 @@
     function renderTable() {
       tableBody.innerHTML = "";
       let sumEur = 0;
+      let filter = filterSelect.value;
 
       data.forEach((item, index) => {
+        if(filter === "active" && item.withdraw) return;
+        if(filter === "withdraw" && !item.withdraw) return;
+
         let usdValue = item.amount * item.rate;
         let eurValue = eurRate ? usdValue * eurRate : 0;
         sumEur += eurValue;
@@ -121,7 +135,7 @@
             <button onclick="withdrawItem(${index})" class="bg-purple-500 text-white px-2 py-1 rounded">Вывести</button>
           </td>
         `;
-        if(item.withdraw) row.style.backgroundColor = "#FEE2E2"; // подсветка красным для выведенных
+        if(item.withdraw) row.style.backgroundColor = "#FEE2E2"; 
         tableBody.appendChild(row);
       });
 
@@ -143,7 +157,7 @@
       localStorage.setItem("cryptoData", JSON.stringify(data));
       renderTable();
       addForm.reset();
-      currencyOther.style.display = "none"; // скрываем поле после добавления
+      currencyOther.style.display = "none";
     });
 
     function deleteItem(index) {
