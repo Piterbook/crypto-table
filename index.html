@@ -117,9 +117,11 @@
           <td class="border p-2">${item.note}</td>
           <td class="border p-2">
             <button onclick="editItem(${index})" class="bg-yellow-400 text-white px-2 py-1 rounded mr-1">✏</button>
-            <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">🗑</button>
+            <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded mr-1">🗑</button>
+            <button onclick="withdrawItem(${index})" class="bg-purple-500 text-white px-2 py-1 rounded">Вывести</button>
           </td>
         `;
+        if(item.withdraw) row.style.backgroundColor = "#FEE2E2"; // подсветка красным для выведенных
         tableBody.appendChild(row);
       });
 
@@ -134,7 +136,8 @@
         currency: currencyValue,
         amount: parseFloat(document.getElementById("amount").value),
         rate: parseFloat(document.getElementById("rate").value),
-        note: document.getElementById("note").value
+        note: document.getElementById("note").value,
+        withdraw: false
       };
       data.push(newItem);
       localStorage.setItem("cryptoData", JSON.stringify(data));
@@ -164,6 +167,12 @@
       document.getElementById("rate").value = item.rate;
       document.getElementById("note").value = item.note;
       deleteItem(index);
+    }
+
+    function withdrawItem(index) {
+      data[index].withdraw = true;
+      localStorage.setItem("cryptoData", JSON.stringify(data));
+      renderTable();
     }
 
     loadEurRate();
