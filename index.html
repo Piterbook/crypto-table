@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Крипто-пополнения</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-md">
+    <h1 class="text-2xl font-bold mb-4">📊 Таблица пополнений криптовалюты</h1>
+
+    <!-- Текущий курс -->
+    <div id="eurRateBox" class="mb-4 text-lg font-semibold text-green-600">Загрузка курса USD→EUR...</div>
+
+    <!-- Форма добавления -->
+    <form id="addForm" class="grid grid-cols-6 gap-2 mb-4">
+      <input type="date" id="date" class="col-span-1 border p-2 rounded" required>
+      <input type="text" id="currency" placeholder="Валюта (BTC)" class="col-span-1 border p-2 rounded" required>
+      <input type="number" id="amount" placeholder="Сумма" step="0.0001" class="col-span-1 border p-2 rounded" required>
+      <input type="number" id="rate" placeholder="Курс $" step="0.01" class="col-span-1 border p-2 rounded" required>
+      <input type="text" id="note" placeholder="Примечание" class="col-span-1 border p-2 rounded">
+      <button type="submit" class="col-span-1 bg-blue-500 text-white rounded p-2 hover:bg-blue-600">Добавить</button>
+    </form>
+
+    <!-- Таблица -->
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse border border-gray-300 text-sm text-center">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border p-2">Дата</th>
+            <th class="border p-2">Валюта</th>
+            <th class="border p-2">Сумма</th>
+            <th class="border p-2">Курс $</th>
+            <th class="border p-2">Стоимость $</th>
+            <th class="border p-2">Стоимость €</th>
+            <th class="border p-2">Примечание</th>
+            <th class="border p-2">Действия</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+        <tfoot class="bg-gray-100 font-bold">
+          <tr>
+            <td colspan="5" class="border p-2 text-right">Итого:</td>
+            <td class="border p-2" id="totalEur">0 €</td>
+            <td colspan="2" class="border p-2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem("cryptoData")) || [];
+    let eurRate = 0;
+
+    const tableBody = document.getElementById("tableBody");
+    const addForm = document.getElementById("addForm");
+    const totalEur = document.getElementById("totalEur");
+    const eurRateBox = document.getElementById("eurRateBox");
+
+    // Загружаем курс USD→EUR
+    async function loadEurRate() {
+      try {
+        let res = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=EUR");
+        let json = await res.json();
+        eurRate = json.rates.EUR;
+        eurRateBox.textContent = `Текущий курс: 1 USD = ${eurRate.toFixed(4)} EUR`;
+        renderTable();
+      } catch (e) {
+        eurRateBox.textContent = "Ошибка загрузки курса!";
+      }
+    }
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      let sumEur = 0;
+
+      data.forEach((item, index) => {
+        let usdValue = item.amount * item.rate;
+        let eurValue = eurRate ? usdValue * eurRate : 0;
+        sumEur += eurValue;
+
+        let row = document.createElement("tr");
+        row.innerHTML = `
+          <td class="border p-2">${item.date}</td>
+          <td class="border p-2">${item.currency}</td>
+          <td class="border p-2">${item.amount}</td>
+          <td class="border p-2">${item.rate}</td>
+          <td class="border p-2">${usdValue.toFixed(2)} $</td>
+          <td class="border p-2">${eurValue.toFixed(2)} €</td>
+          <td class="border p-2">${item.note}</td>
+          <td class="border p-2">
+            <button onclick="editItem(${index})" class="bg-yellow-400 text-white px-2 py-1 rounded mr-1">✏</button>
+            <button onclick="deleteItem(${index})" class="bg-red-500 text-white px-2 py-1 rounded">🗑</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      totalEur.textContent = sumEur.toFixed(2) + " €";
+    }
+
+    addForm.addEventListener("submit", e => {
+      e.preventDefault();
+      let newItem = {
+        date: document.getElementById("date").value,
+        currency: document.getElementById("currency").value,
+        amount: parseFloat(document.getElementById("amount").value),
+        rate: parseFloat(document.getElementById("rate").value),
+        note: document.getElementById("note").value
+      };
+      data.push(newItem);
+      localStorage.setItem("cryptoData", JSON.stringify(data));
+      renderTable();
+      addForm.reset();
+    });
+
+    function deleteItem(index) {
+      data.splice(index, 1);
+      localStorage.setItem("cryptoData", JSON.stringify(data));
+      renderTable();
+    }
+
+    function editItem(index) {
+      let item = data[index];
+      document.getElementById("date").value = item.date;
+      document.getElementById("currency").value = item.currency;
+      document.getElementById("amount").value = item.amount;
+      document.getElementById("rate").value = item.rate;
+      document.getElementById("note").value = item.note;
+      deleteItem(index);
+    }
+
+    // Загружаем курс и строим таблицу
+    loadEurRate();
+  </script>
+</body>
+</html>
