@@ -41,7 +41,6 @@
       <input type="text" id="currencyOther" placeholder="Введите другую валюту" class="col-span-1 border p-2 rounded" style="display:none;">
 
       <input type="number" id="amount" placeholder="Сумма" step="0.0001" class="col-span-1 border p-2 rounded" required>
-      <input type="number" id="rate" placeholder="Курс $" step="0.01" class="col-span-1 border p-2 rounded" required>
       <input type="text" id="note" placeholder="Примечание" class="col-span-1 border p-2 rounded">
       <button type="submit" class="col-span-1 bg-blue-500 text-white rounded p-2 hover:bg-blue-600">Добавить</button>
     </form>
@@ -54,8 +53,6 @@
             <th class="border p-2">Дата</th>
             <th class="border p-2">Валюта</th>
             <th class="border p-2">Сумма</th>
-            <th class="border p-2">Курс $</th>
-            <th class="border p-2">Стоимость $</th>
             <th class="border p-2">Стоимость €</th>
             <th class="border p-2">Примечание</th>
             <th class="border p-2">Действия</th>
@@ -64,7 +61,7 @@
         <tbody id="tableBody"></tbody>
         <tfoot class="bg-gray-100 font-bold">
           <tr>
-            <td colspan="5" class="border p-2 text-right">Итого:</td>
+            <td colspan="3" class="border p-2 text-right">Итого:</td>
             <td class="border p-2" id="totalEur">0 €</td>
             <td colspan="2" class="border p-2"></td>
           </tr>
@@ -75,37 +72,21 @@
 
   <script>
     let data = JSON.parse(localStorage.getItem("cryptoData")) || [];
-    let eurRate = 0;
+    let eurRate = 1; // оставляем для расчета, хотя курс $ больше не отображается
 
     const tableBody = document.getElementById("tableBody");
     const addForm = document.getElementById("addForm");
     const totalEur = document.getElementById("totalEur");
-    const eurRateBox = document.getElementById("eurRateBox");
 
     const currencySelect = document.getElementById("currency");
     const currencyOther = document.getElementById("currencyOther");
     const filterSelect = document.getElementById("filter");
 
-    // Показать/скрыть поле "Другие"
     currencySelect.addEventListener("change", () => {
       currencyOther.style.display = currencySelect.value === "Другие" ? "block" : "none";
     });
 
-    // Фильтр таблицы
     filterSelect.addEventListener("change", renderTable);
-
-    // Загружаем курс USD→EUR
-    async function loadEurRate() {
-      try {
-        let res = await fetch("https://api.exchangerate.host/latest?base=USD&symbols=EUR");
-        let json = await res.json();
-        eurRate = json.rates.EUR;
-        eurRateBox.textContent = `Текущий курс: 1 USD = ${eurRate.toFixed(4)} EUR`;
-        renderTable();
-      } catch (e) {
-        eurRateBox.textContent = "Ошибка загрузки курса!";
-      }
-    }
 
     function renderTable() {
       tableBody.innerHTML = "";
@@ -116,8 +97,7 @@
         if(filter === "active" && item.withdraw) return;
         if(filter === "withdraw" && !item.withdraw) return;
 
-        let usdValue = item.amount * item.rate;
-        let eurValue = eurRate ? usdValue * eurRate : 0;
+        let eurValue = item.amount; // просто сумма в евро
         sumEur += eurValue;
 
         let row = document.createElement("tr");
@@ -125,8 +105,6 @@
           <td class="border p-2">${item.date}</td>
           <td class="border p-2">${item.currency}</td>
           <td class="border p-2">${item.amount}</td>
-          <td class="border p-2">${item.rate}</td>
-          <td class="border p-2">${usdValue.toFixed(2)} $</td>
           <td class="border p-2">${eurValue.toFixed(2)} €</td>
           <td class="border p-2">${item.note}</td>
           <td class="border p-2">
@@ -149,7 +127,6 @@
         date: document.getElementById("date").value,
         currency: currencyValue,
         amount: parseFloat(document.getElementById("amount").value),
-        rate: parseFloat(document.getElementById("rate").value),
         note: document.getElementById("note").value,
         withdraw: false
       };
@@ -178,7 +155,6 @@
         currencyOther.value = item.currency;
       }
       document.getElementById("amount").value = item.amount;
-      document.getElementById("rate").value = item.rate;
       document.getElementById("note").value = item.note;
       deleteItem(index);
     }
@@ -189,7 +165,7 @@
       renderTable();
     }
 
-    loadEurRate();
+    renderTable();
   </script>
 </body>
 </html>
