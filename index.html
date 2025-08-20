@@ -9,9 +9,6 @@
   <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-md">
     <h1 class="text-2xl font-bold mb-4">📊 Таблица пополнений криптовалюты</h1>
 
-    <!-- Текущий курс -->
-    <div id="eurRateBox" class="mb-4 text-lg font-semibold text-green-600">Загрузка курса USD→EUR...</div>
-
     <!-- Фильтр -->
     <div class="mb-4">
       <label for="filter" class="mr-2 font-semibold">Фильтр:</label>
@@ -40,7 +37,7 @@
       <!-- Скрытое поле для "Другие" -->
       <input type="text" id="currencyOther" placeholder="Введите другую валюту" class="col-span-1 border p-2 rounded" style="display:none;">
 
-      <input type="number" id="amount" placeholder="Сумма" step="0.0001" class="col-span-1 border p-2 rounded" required>
+      <input type="number" id="amount" placeholder="Сумма (€)" step="0.01" class="col-span-1 border p-2 rounded" required>
       <input type="text" id="note" placeholder="Примечание" class="col-span-1 border p-2 rounded">
       <button type="submit" class="col-span-1 bg-blue-500 text-white rounded p-2 hover:bg-blue-600">Добавить</button>
     </form>
@@ -52,8 +49,7 @@
           <tr>
             <th class="border p-2">Дата</th>
             <th class="border p-2">Валюта</th>
-            <th class="border p-2">Сумма</th>
-            <th class="border p-2">Стоимость €</th>
+            <th class="border p-2">Сумма (€)</th>
             <th class="border p-2">Примечание</th>
             <th class="border p-2">Действия</th>
           </tr>
@@ -61,7 +57,7 @@
         <tbody id="tableBody"></tbody>
         <tfoot class="bg-gray-100 font-bold">
           <tr>
-            <td colspan="3" class="border p-2 text-right">Итого:</td>
+            <td colspan="2" class="border p-2 text-right">Итого:</td>
             <td class="border p-2" id="totalEur">0 €</td>
             <td colspan="2" class="border p-2"></td>
           </tr>
@@ -72,7 +68,6 @@
 
   <script>
     let data = JSON.parse(localStorage.getItem("cryptoData")) || [];
-    let eurRate = 1; // оставляем для расчета, хотя курс $ больше не отображается
 
     const tableBody = document.getElementById("tableBody");
     const addForm = document.getElementById("addForm");
@@ -82,6 +77,7 @@
     const currencyOther = document.getElementById("currencyOther");
     const filterSelect = document.getElementById("filter");
 
+    // Показать/скрыть поле "Другие"
     currencySelect.addEventListener("change", () => {
       currencyOther.style.display = currencySelect.value === "Другие" ? "block" : "none";
     });
@@ -97,15 +93,13 @@
         if(filter === "active" && item.withdraw) return;
         if(filter === "withdraw" && !item.withdraw) return;
 
-        let eurValue = item.amount; // просто сумма в евро
-        sumEur += eurValue;
+        sumEur += item.amount;
 
         let row = document.createElement("tr");
         row.innerHTML = `
           <td class="border p-2">${item.date}</td>
           <td class="border p-2">${item.currency}</td>
-          <td class="border p-2">${item.amount}</td>
-          <td class="border p-2">${eurValue.toFixed(2)} €</td>
+          <td class="border p-2">${item.amount.toFixed(2)} €</td>
           <td class="border p-2">${item.note}</td>
           <td class="border p-2">
             <button onclick="editItem(${index})" class="bg-yellow-400 text-white px-2 py-1 rounded mr-1">✏</button>
@@ -113,59 +107,6 @@
             <button onclick="withdrawItem(${index})" class="bg-purple-500 text-white px-2 py-1 rounded">Вывести</button>
           </td>
         `;
-        if(item.withdraw) row.style.backgroundColor = "#FEE2E2"; 
-        tableBody.appendChild(row);
-      });
+        if(item.withdraw) row.styl
 
-      totalEur.textContent = sumEur.toFixed(2) + " €";
-    }
-
-    addForm.addEventListener("submit", e => {
-      e.preventDefault();
-      let currencyValue = currencySelect.value === "Другие" ? currencyOther.value : currencySelect.value;
-      let newItem = {
-        date: document.getElementById("date").value,
-        currency: currencyValue,
-        amount: parseFloat(document.getElementById("amount").value),
-        note: document.getElementById("note").value,
-        withdraw: false
-      };
-      data.push(newItem);
-      localStorage.setItem("cryptoData", JSON.stringify(data));
-      renderTable();
-      addForm.reset();
-      currencyOther.style.display = "none";
-    });
-
-    function deleteItem(index) {
-      data.splice(index, 1);
-      localStorage.setItem("cryptoData", JSON.stringify(data));
-      renderTable();
-    }
-
-    function editItem(index) {
-      let item = data[index];
-      document.getElementById("date").value = item.date;
-      if(["BTC","ETH","BNB","USDT","LTC"].includes(item.currency)) {
-        currencySelect.value = item.currency;
-        currencyOther.style.display = "none";
-      } else {
-        currencySelect.value = "Другие";
-        currencyOther.style.display = "block";
-        currencyOther.value = item.currency;
-      }
-      document.getElementById("amount").value = item.amount;
-      document.getElementById("note").value = item.note;
-      deleteItem(index);
-    }
-
-    function withdrawItem(index) {
-      data[index].withdraw = true;
-      localStorage.setItem("cryptoData", JSON.stringify(data));
-      renderTable();
-    }
-
-    renderTable();
-  </script>
-</body>
-</html>
+                   
